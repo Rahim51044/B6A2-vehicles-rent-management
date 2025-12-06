@@ -60,36 +60,162 @@ await pool.query(`
   updated_at TIMESTAMP DEFAULT NOW()
 );
   `)
-
-
-
 }
 initDB();
-
 
 app.get('/', (req:Request, res:Response) => {
   res.send('Vehicle Rent Management')
 })
 
 
-
-app.post("/", (req: Request, res: Response) => {
-  console.log(req.body)
-
+// Endpoin Users
+app.post("/users", async (req: Request, res: Response) => {
+  const {name, email, password, phone, role} = req.body;
+try{
+const result = await pool.query(
+  `INSERT INTO users(name, email, password, phone, role) VALUES($1, $2, $3, $4, $5) RETURNING *`, [name, email, password, phone, role]
+)
   res.status(201).json({
     "success": true,
-    "message": "User registered successfully"
+    "message": "User registered successfully",
+    data: result.rows[0]
   })
+}catch(err: any){
+  res.status(500).json({
+  success: false,
+  message: err.message
+  })
+}
+})
+
+
+// Endpoint Vehicles
+app.post("/vehicles", async (req: Request, res: Response) => {
+  const {vehicle_name, type, registration_number, daily_rent_price, availability_status} = req.body;
+try{
+const result = await pool.query(
+  `INSERT INTO vehicles (vehicle_name, type, registration_number, daily_rent_price, availability_status) VALUES($1, $2, $3, $4, $5) RETURNING *`, [vehicle_name, type, registration_number, daily_rent_price, availability_status]
+);
+  res.status(201).json({
+    "success": true,
+    "message": "Vehicles created successfully",
+    data: result.rows[0]
+  })
+}catch(err: any){
+  res.status(500).json({
+  success: false,
+  message: err.message
+  })
+}
+})
+
+
+app.get("/vehicles", async (req: Request, res: Response) => {
+try{
+const result = await pool.query(`SELECT * FROM vehicles`);
+  res.status(200).json({
+    "success": true,
+    "message": "Vehicles created successfully",
+    data: result.rows
+  })
+}catch(err: any){
+  res.status(500).json({
+  success: false,
+  message: err.message
+  })
+}
+})
+
+
+app.get("/vehicles/:vehicleId", async (req: Request, res: Response) => {
+try{
+const result = await pool.query(`SELECT * FROM vehicles WHERE id = $1`,[req.params.vehicleId]);
+if(result.rows.length === 0){
+  res.status(404).json({
+    success: false,
+    message: "No vehicles found",
+    data: result.rows[0]
+  })
+}
+else{
+res.status(200).json({
+    "success": true,
+    "message": "Vehicles created successfully",
+    data: result.rows[0]
+  })
+}
+}catch(err: any){
+  res.status(500).json({
+  success: false,
+  message: err.message
+  })
+}
+})
+
+
+app.put("/vehicles/:vehicleId", async (req: Request, res: Response) => {
+const {vehicle_name, type, registration_number, daily_rent_price, availability_status} = req.body;
+try{
+const result = await pool.query(`UPDATE vehicles SET vehicle_name=$1, type=$2, registration_number=$3, daily_rent_price=$4, availability_status=$5 WHERE id=$6 RETURNING *`,[vehicle_name, type, registration_number, daily_rent_price, availability_status, req.params.vehicleId]);
+
+if(result.rows.length === 0){
+  res.status(404).json({
+    success: false,
+    message: "No vehicles found",
+    data: result.rows[0]
+  })
+}
+else{
+res.status(200).json({
+    "success": true,
+    "message": "Vehicle Updated successfully",
+    data: result.rows[0]
+  })
+}
+}catch(err: any){
+  res.status(500).json({
+  success: false,
+  message: err.message
+  })
+}
+})
+
+
+app.delete("/vehicles/:vehicleId", async (req: Request, res: Response) => {
+try{
+const result = await pool.query(`DELETE FROM vehicles WHERE id = $1`,[req.params.vehicleId]);
+if(result.rowCount === 0){
+  res.status(404).json({
+    success: false,
+    message: "No vehicles found",
+    data: result.rows[0]
+  })
+}
+else{
+res.status(200).json({
+    "success": true,
+    "message": "Vehicle Deleted successfully",
+  })
+}
+}catch(err: any){
+  res.status(500).json({
+  success: false,
+  message: err.message
+  })
+}
 })
 
 
 
-
-
-
-
-
+app.use((req, res)=>{
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    path: req.path
+  })
+})
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
+
