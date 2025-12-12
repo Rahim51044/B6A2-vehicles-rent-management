@@ -53,7 +53,6 @@ const updateUser = async (req: Request, res: Response) => {
     const userId = req.params.id;
     const loggedInUser = req.user;
 
-    // TypeScript safe check
     if (!loggedInUser) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }

@@ -6,14 +6,6 @@ const stripPassword = (user: any) => {
 };
 
 
-// const getAllUsers = async () => {
-//   const res = await pool.query(`
-//     SELECT id, name, email, phone, role, created_at
-//     FROM users
-//     ORDER BY id DESC
-//   `);
-//   return res.rows;
-// };
 
 const getAllUsers = async () => {
   const result = await pool.query(`SELECT id, name, email, phone, role FROM users`);

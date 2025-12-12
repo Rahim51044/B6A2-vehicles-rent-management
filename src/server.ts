@@ -4,6 +4,7 @@ import initDB, { pool } from "./config/db";
 import { vehicleRoutes } from "./modules/vehicles/vehicles.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { usersRoutes } from "./modules/users/users.routes";
+import { bookingRoutes } from "./modules/bookings/bookings.routes";
 
 
 
@@ -22,6 +23,7 @@ app.get('/', (req:Request, res:Response) => {
 app.use('/api/v1/vehicles', vehicleRoutes)
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/users', usersRoutes)
+app.use('/api/v1/bookings', bookingRoutes )
 
 
 
