@@ -20,7 +20,7 @@ const createBooking = async (req: Request, res: Response) => {
     const vehicle = vehicleRes.rows[0];
 
     if (vehicle.availability_status === "booked")
-      return res.status(400).json({ success: false, message: "You are not created post" });
+      return res.status(400).json({ success: false, message: "vehicle booked" });
 
     // Calculatetotal price
     const start = new Date(rent_start_date);
