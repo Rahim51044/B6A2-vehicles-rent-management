@@ -29,7 +29,7 @@ const getAllBookings = async (role: string, userId: number) => {
     return result.rows;
   }
 
-  // own bookings
+  // own booking
   const result = await pool.query(
     `
     SELECT b.*, v.vehicle_name, v.registration_number, v.type
