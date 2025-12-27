@@ -30,25 +30,30 @@ const signin = async (email: string, password: string) => {
   if (!match) 
   throw new Error("Invalid credentials");
 
-   const token = jwt.sign(
-    { name: user.name, email: user.email, role: user.role },
+  //  const token = jwt.sign(
+  //   { name: user.name, email: user.email, role: user.role },
+  //   config.jwtSecret as string,
+  //   {
+  //     expiresIn: "365d",
+  //   }
+  // );
+
+    const token = jwt.sign(
+    {
+      id: user.id,        
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
     config.jwtSecret as string,
     {
-      expiresIn: "7d",
+      expiresIn: "365d",
     }
   );
 
+
 return {token, user};
-  // return {
-  //   token,
-  //   user: {
-  //     id: user.id,
-  //     name: user.name,
-  //     email: user.email,
-  //     phone: user.phone,
-  //     role: user.role,
-  //   },
-  // };
+
 };
 
 

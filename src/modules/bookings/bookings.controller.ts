@@ -1,31 +1,53 @@
 
+
+
+
 import { Request, Response } from "express";
 import { pool } from "../../config/db";
 import { bookingsService } from "./bookings.service";
 
-// Create booking
+
 const createBooking = async (req: Request, res: Response) => {
   try {
-    const { customer_id, vehicle_id, rent_start_date, rent_end_date } = req.body;
+    const { vehicle_id, rent_start_date, rent_end_date } = req.body;
 
-    // Check vehicle availability
+    const customer_id = req.user!.id;
+
     const vehicleRes = await pool.query(
       `SELECT daily_rent_price, availability_status FROM vehicles WHERE id=$1`,
       [vehicle_id]
     );
 
-    if (vehicleRes.rows.length === 0)
-      return res.status(404).json({ success: false, message: "You are not created post" });
+    if (vehicleRes.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Vehicle not found",
+      });
+    }
 
     const vehicle = vehicleRes.rows[0];
 
-    if (vehicle.availability_status === "booked")
-      return res.status(400).json({ success: false, message: "vehicle booked" });
+    if (vehicle.availability_status === "booked") {
+      return res.status(400).json({
+        success: false,
+        message: "Vehicle already booked",
+      });
+    }
 
-    // Calculatetotal price
     const start = new Date(rent_start_date);
     const end = new Date(rent_end_date);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (end <= start) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid rental date range",
+      });
+    }
+
+    const days = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     const total_price = vehicle.daily_rent_price * days;
 
     // Create booking
@@ -37,9 +59,11 @@ const createBooking = async (req: Request, res: Response) => {
       total_price
     );
 
-    await pool.query(`UPDATE vehicles SET availability_status='booked' WHERE id=$1`, [
-      vehicle_id,
-    ]);
+    // Update vehicle status
+    await pool.query(
+      `UPDATE vehicles SET availability_status='booked' WHERE id=$1`,
+      [vehicle_id]
+    );
 
     res.status(201).json({
       success: true,
@@ -47,14 +71,17 @@ const createBooking = async (req: Request, res: Response) => {
       data: booking,
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
 
 const getAllBookings = async (req: Request, res: Response) => {
   try {
-    const role = req.user!.role; 
+    const role = req.user!.role;
     const userId = req.user!.id;
 
     const bookings = await bookingsService.getAllBookings(role, userId);
@@ -63,12 +90,15 @@ const getAllBookings = async (req: Request, res: Response) => {
       success: true,
       message:
         role === "admin"
-          ? "Bookings retrieved successfully"
+          ? "All bookings retrieved successfully"
           : "Your bookings retrieved successfully",
       data: bookings,
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
@@ -78,20 +108,40 @@ const updateBooking = async (req: Request, res: Response) => {
     const { status } = req.body;
     const bookingId = Number(req.params.bookingId);
 
+    const role = req.user!.role;
+    const userId = req.user!.id;
+
+    const bookingRes = await pool.query(
+      `SELECT * FROM bookings WHERE id=$1`,
+      [bookingId]
+    );
+
+    if (bookingRes.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    const booking = bookingRes.rows[0];
+
+    if (role === "customer" && booking.customer_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can update only your own booking",
+      });
+    }
+
     const updatedBooking = await bookingsService.updateBookingStatus(
       bookingId,
       status
     );
 
-    if (!updatedBooking)
-      return res
-        .status(404)
-        .json({ success: false, message: "Booking not found!" });
-
     if (status === "returned" || status === "cancelled") {
-      await pool.query(`UPDATE vehicles SET availability_status='available' WHERE id=$1`, [
-        updatedBooking.vehicle_id,
-      ]);
+      await pool.query(
+        `UPDATE vehicles SET availability_status='available' WHERE id=$1`,
+        [booking.vehicle_id]
+      );
     }
 
     const message =
@@ -105,15 +155,16 @@ const updateBooking = async (req: Request, res: Response) => {
       data: updatedBooking,
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
+
 
 export const bookingsController = {
   createBooking,
   getAllBookings,
   updateBooking,
 };
-
-
-
